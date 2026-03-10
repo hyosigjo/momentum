@@ -3,89 +3,502 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <title>나만의 동기부여 홈화면 만들기</title>
-
-    <script src="index.js"></script>
+    <title>Momentum - 나만의 동기부여 홈화면</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap');
+        :root {
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --glass-hover: rgba(255, 255, 255, 0.2);
+            --text: rgba(255, 255, 255, 0.95);
+            --text-dim: rgba(255, 255, 255, 0.65);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --radius: 20px;
+        }
 
         * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
         }
 
-        .test {
-            font-size: 30px;
-        }
-
-
         body {
-            background-image: url(https://cdn.herenow.city/assets/uploads/sites/9/2019/02/19163424/73perhaps01.jpg);
-            background-position: center;
-
-            color: white;
+            min-height: 100vh;
+            color: var(--text);
+            transition: background 3s ease;
+            overflow: hidden;
         }
 
-        .time {
-            font-size: 80px;
-            font-weight: bold;
+        /* ── Time-based backgrounds ── */
+        body.time-night    { background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+        body.time-dawn     { background: linear-gradient(135deg, #2d1b69 0%, #c84b31 50%, #f8a978 100%); }
+        body.time-morning  { background: linear-gradient(135deg, #1a6fc4 0%, #38b2f0 60%, #72d0f5 100%); }
+        body.time-afternoon{ background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%); }
+        body.time-sunset   { background: linear-gradient(135deg, #c94b4b 0%, #e88c4a 50%, #f6d365 100%); }
+        body.time-evening  { background: linear-gradient(135deg, #360033 0%, #0b8793 100%); }
+
+        /* ── Stars (night only) ── */
+        #stars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+        body.time-night #stars,
+        body.time-dawn #stars  { opacity: 1; }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--dur, 3s) ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50%       { opacity: 1;   transform: scale(1.3); }
+        }
+
+        /* ── Layout ── */
+        .container {
+            position: relative;
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            grid-template-columns: 1fr auto;
+            gap: 24px;
+            padding: 40px;
+        }
+
+        /* ── Main center ── */
+        .main {
+            grid-column: 1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .time-display {
+            font-size: clamp(72px, 12vw, 130px);
+            font-weight: 700;
+            letter-spacing: -2px;
+            line-height: 1;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: fadeUp 1s ease forwards;
         }
 
         .greeting {
-            font-size: 50px;
-
+            font-size: clamp(28px, 4vw, 52px);
+            font-weight: 500;
+            opacity: 0.92;
+            animation: fadeUp 1s 0.2s ease both;
         }
 
-        .todo {
-            font-size: 30px;
+        .greeting #user-name {
+            cursor: pointer;
+            border-bottom: 2px dashed rgba(255,255,255,0.4);
+            transition: border-color 0.2s;
+        }
+        .greeting #user-name:hover { border-color: white; }
+
+        .focus-wrap {
+            margin-top: 8px;
+            animation: fadeUp 1s 0.4s ease both;
+        }
+        #focus-text {
+            font-size: clamp(16px, 2vw, 22px);
+            font-weight: 300;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(255,255,255,0.3);
+            transition: all 0.2s;
+        }
+        #focus-text:hover { color: var(--text); border-color: white; }
+        #focus-text.editing {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 4px 12px;
+            outline: none;
         }
 
-        .author {
-            font-size: 25px;
+        /* ── Todo card ── */
+        .todo-card {
+            grid-column: 2;
+            grid-row: 1;
+            width: 300px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeLeft 1s 0.3s ease both;
+        }
+
+        .todo-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .todo-input-row {
+            display: flex;
+            gap: 8px;
+        }
+        .todo-input-row input {
+            flex: 1;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            outline: none;
+            transition: background 0.2s;
+        }
+        .todo-input-row input::placeholder { color: rgba(255,255,255,0.45); }
+        .todo-input-row input:focus { background: rgba(255,255,255,0.22); }
+
+        .btn-add {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255,255,255,0.25);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-add:hover { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+
+        .todo-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .todo-list::-webkit-scrollbar { width: 4px; }
+        .todo-list::-webkit-scrollbar-track { background: transparent; }
+        .todo-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.08);
+            transition: background 0.2s;
+            animation: fadeIn 0.3s ease;
+        }
+        .todo-item:hover { background: rgba(255,255,255,0.15); }
+
+        .todo-check {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.5);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .todo-item.done .todo-check {
+            background: rgba(255,255,255,0.8);
+            border-color: white;
+        }
+        .todo-item.done .todo-check::after {
+            content: '✓';
+            font-size: 11px;
+            color: #333;
+            font-weight: 700;
+        }
+        .todo-label {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 400;
+            transition: all 0.2s;
+        }
+        .todo-item.done .todo-label {
+            opacity: 0.45;
+            text-decoration: line-through;
+        }
+        .todo-delete {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            font-size: 16px;
+            transition: opacity 0.2s, color 0.2s;
+            padding: 0 2px;
+        }
+        .todo-item:hover .todo-delete { opacity: 1; }
+        .todo-delete:hover { color: white; }
+
+        .todo-footer {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        /* ── Quote bar ── */
+        .quote-bar {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px 32px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            animation: fadeUp 1s 0.5s ease both;
+        }
+
+        .quote-content-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+        #content {
+            font-size: clamp(13px, 1.4vw, 17px);
+            font-weight: 400;
             font-style: italic;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        #author {
+            font-size: clamp(11px, 1.1vw, 14px);
+            font-weight: 500;
+            color: var(--text-dim);
         }
 
-        .main {
-            width: 100vw;
-            height: 80vh;
+        .btn-refresh {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 12px;
+            padding: 8px 16px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .btn-refresh:hover { background: rgba(255,255,255,0.25); transform: scale(1.02); }
+        .btn-refresh.spinning svg { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* ── Weather widget ── */
+        .weather-widget {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 12px;
+            animation: fadeRight 1s 0.6s ease both;
         }
 
-        .quote {
-            width: 100vw;
-            height: 20vh;
+        .weather-icon { font-size: 32px; line-height: 1; }
+        .weather-info { display: flex; flex-direction: column; }
+        .weather-temp {
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+        .weather-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+        .weather-city {
+            font-size: 10px;
+            color: var(--text-dim);
+            font-weight: 300;
+        }
 
+        /* ── Date badge ── */
+        .date-badge {
+            position: fixed;
+            top: 40px;
+            right: 40px;
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 12px 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            animation: fadeLeft 1s 0.6s ease both;
+        }
+        .date-day   { font-size: 28px; font-weight: 700; line-height: 1; }
+        .date-month { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .date-weekday { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeRight {
+            from { opacity: 0; transform: translateX(-20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Name / focus edit overlay ── */
+        .edit-input {
+            background: var(--glass);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 6px 16px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: inherit;
+            font-weight: inherit;
+            text-align: center;
+            outline: none;
+            width: 280px;
+        }
+        .edit-input:focus { border-color: rgba(255,255,255,0.6); }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                padding: 80px 20px 20px;
+                overflow: auto;
+                min-height: 100vh;
+            }
+            .todo-card {
+                grid-column: 1;
+                grid-row: 2;
+                width: 100%;
+            }
+            .quote-bar {
+                grid-column: 1;
+                grid-row: 3;
+                flex-direction: column;
+                text-align: center;
+            }
+            .weather-widget { top: 12px; left: 12px; padding: 10px 14px; }
+            .date-badge     { top: 12px; right: 12px; padding: 8px 14px; }
+            body { overflow: auto; }
         }
     </style>
-
-    <script>
-    </script>
 </head>
 
-<body>
-    <div class="main">
-        <div id="time" class="time">12:00</div>
-        <div class="greeting">Hello, Josh</div>
-        <div class="todo">업무시간에 몰입하기</div>
-    </div>
-    <div class="quote">
-        <div id="author" class="author">- 명언의 저자 -</div>
-        <div id="content"> 명언의 내용 "</div>
+<body class="time-morning">
+
+    <!-- Starfield (visible at night/dawn) -->
+    <div id="stars"></div>
+
+    <!-- Weather (top-left) -->
+    <div class="weather-widget" id="weather-widget">
+        <div class="weather-icon" id="weather-icon">⏳</div>
+        <div class="weather-info">
+            <div class="weather-temp" id="weather-temp">--°</div>
+            <div class="weather-desc" id="weather-desc">Loading...</div>
+            <div class="weather-city" id="weather-city"></div>
+        </div>
     </div>
 
+    <!-- Date badge (top-right) -->
+    <div class="date-badge">
+        <div class="date-day"   id="date-day">--</div>
+        <div class="date-month" id="date-month">---</div>
+        <div class="date-weekday" id="date-weekday">---</div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="container">
+
+        <!-- Center: clock + greeting + focus -->
+        <div class="main">
+            <div class="time-display" id="time">00:00</div>
+
+            <div class="greeting">
+                안녕하세요, <span id="user-name" title="클릭해서 이름 변경">Josh</span>
+            </div>
+
+            <div class="focus-wrap">
+                <span id="focus-text" title="클릭해서 오늘의 집중 목표 변경">오늘의 집중: 업무시간에 몰입하기</span>
+            </div>
+        </div>
+
+        <!-- Right: Todo card -->
+        <div class="todo-card">
+            <h3>오늘의 할 일</h3>
+
+            <div class="todo-input-row">
+                <input type="text" id="todo-input" placeholder="할 일 추가..." maxlength="60" />
+                <button class="btn-add" id="btn-add" title="추가">+</button>
+            </div>
+
+            <ul class="todo-list" id="todo-list"></ul>
+
+            <div class="todo-footer" id="todo-footer"></div>
+        </div>
+
+        <!-- Bottom: Quote bar -->
+        <div class="quote-bar">
+            <div class="quote-content-wrap">
+                <div id="content">" 명언을 불러오는 중... "</div>
+                <div id="author">— 저자 —</div>
+            </div>
+            <button class="btn-refresh" id="btn-refresh">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                새 명언
+            </button>
+        </div>
+
+    </div>
+
+    <script src="index.js"></script>
 </body>
 
 </html>
