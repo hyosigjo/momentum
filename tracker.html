@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok 7일 조회수 트래커</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #f0f0f0;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ff2d55;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: #888;
+            margin-top: 6px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* ── 입력 섹션 ── */
+        .input-section {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 32px;
+        }
+
+        .input-section h2 {
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .url-input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .url-input-row input[type="url"],
+        .url-input-row input[type="date"],
+        .url-input-row input[type="text"] {
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #f0f0f0;
+            font-size: 13px;
+            padding: 10px 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .url-input-row input[type="url"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .url-input-row input[type="date"],
+        .url-input-row input[type="text"] {
+            width: 160px;
+        }
+
+        .url-input-row input:focus {
+            border-color: #ff2d55;
+        }
+
+        .bulk-textarea {
+            width: 100%;
+            background: #0d0d0d;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #f0f0f0;
+            font-size: 13px;
+            padding: 12px 14px;
+            resize: vertical;
+            min-height: 100px;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .bulk-textarea:focus {
+            border-color: #ff2d55;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 18px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: #ff2d55;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: #2a2a2a;
+            color: #ccc;
+        }
+
+        .btn-success {
+            background: #1db954;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .toggle-bulk {
+            font-size: 12px;
+            color: #888;
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: inline-block;
+            text-decoration: underline;
+        }
+
+        /* ── 탭 ── */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #1a1a1a;
+            color: #666;
+            border: 1px solid #2a2a2a;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #ff2d55;
+            color: #fff;
+            border-color: #ff2d55;
+        }
+
+        /* ── 영상 카드 ── */
+        .video-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .video-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            transition: border-color 0.2s;
+        }
+
+        .video-card:hover {
+            border-color: #444;
+        }
+
+        .video-card.ready {
+            border-color: #ff2d55;
+            background: #1f0a10;
+        }
+
+        .video-card.done {
+            border-color: #1db954;
+            background: #0a1a0d;
+        }
+
+        .video-thumb {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .video-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .video-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .video-url {
+            font-size: 12px;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+        }
+
+        .video-url a {
+            color: #888;
+            text-decoration: none;
+        }
+
+        .video-url a:hover {
+            color: #ff2d55;
+        }
+
+        .video-dates {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .video-status {
+            margin-left: auto;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-waiting {
+            background: #1e1e1e;
+            color: #888;
+            border: 1px solid #333;
+        }
+
+        .badge-ready {
+            background: #ff2d55;
+            color: #fff;
+        }
+
+        .badge-done {
+            background: #1db954;
+            color: #fff;
+        }
+
+        .views-display {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1db954;
+            margin-top: 4px;
+        }
+
+        .days-left {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .views-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .views-input-row input {
+            flex: 1;
+            background: #0d0d0d;
+            border: 1px solid #ff2d55;
+            border-radius: 8px;
+            color: #f0f0f0;
+            font-size: 13px;
+            padding: 8px 12px;
+            outline: none;
+            max-width: 200px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        /* ── 빈 상태 ── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #444;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* ── 리포트 섹션 ── */
+        .report-section {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 28px;
+            margin-top: 32px;
+        }
+
+        .report-section h2 {
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .report-table th {
+            text-align: left;
+            padding: 10px 14px;
+            background: #0d0d0d;
+            color: #888;
+            font-weight: 500;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .report-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #1e1e1e;
+            color: #ccc;
+            vertical-align: middle;
+        }
+
+        .report-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .report-table td a {
+            color: #ff2d55;
+            text-decoration: none;
+            font-size: 11px;
+        }
+
+        .report-table td a:hover {
+            text-decoration: underline;
+        }
+
+        .views-cell {
+            font-weight: 700;
+            color: #1db954;
+        }
+
+        .pending-cell {
+            color: #555;
+            font-style: italic;
+        }
+
+        /* ── 토스트 ── */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1db954;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .stat-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: #0d0d0d;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            padding: 14px 20px;
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stat-item .num {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-item .label {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .stat-total .num { color: #f0f0f0; }
+        .stat-waiting .num { color: #888; }
+        .stat-ready .num { color: #ff2d55; }
+        .stat-done .num { color: #1db954; }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>TikTok 7일 조회수 트래커</h1>
+            <p>게시일로부터 7일 후 조회수를 기록하고 리포트를 생성하세요</p>
+        </header>
+
+        <!-- 통계 바 -->
+        <div class="stat-bar" id="statBar">
+            <div class="stat-item stat-total">
+                <div class="num" id="statTotal">0</div>
+                <div class="label">전체 영상</div>
+            </div>
+            <div class="stat-item stat-waiting">
+                <div class="num" id="statWaiting">0</div>
+                <div class="label">대기 중</div>
+            </div>
+            <div class="stat-item stat-ready">
+                <div class="num" id="statReady">0</div>
+                <div class="label">조회수 입력 필요</div>
+            </div>
+            <div class="stat-item stat-done">
+                <div class="num" id="statDone">0</div>
+                <div class="label">기록 완료</div>
+            </div>
+        </div>
+
+        <!-- 입력 섹션 -->
+        <div class="input-section">
+            <h2>영상 추가</h2>
+
+            <span class="toggle-bulk" id="toggleBulk">📋 여러 링크 한번에 붙여넣기</span>
+
+            <!-- 단일 입력 -->
+            <div id="singleInput">
+                <div class="url-input-row">
+                    <input type="url" id="urlInput" placeholder="https://www.tiktok.com/@username/video/..." />
+                    <input type="date" id="dateInput" title="게시일 (비워두면 오늘로 설정)" />
+                    <input type="text" id="noteInput" placeholder="메모 (선택)" />
+                </div>
+                <div class="btn-row">
+                    <button class="btn-primary" onclick="addVideo()">영상 추가</button>
+                </div>
+            </div>
+
+            <!-- 일괄 입력 -->
+            <div id="bulkInput" style="display:none;">
+                <textarea class="bulk-textarea" id="bulkTextarea"
+                    placeholder="TikTok URL을 한 줄에 하나씩 붙여넣으세요.&#10;게시일을 함께 입력하려면 탭이나 쉼표로 구분하세요.&#10;예) https://tiktok.com/... 2025-01-15&#10;    https://tiktok.com/... 2025-01-20"
+                    style="display:block;"></textarea>
+                <div class="btn-row">
+                    <button class="btn-primary" onclick="addBulkVideos()">일괄 추가</button>
+                    <button class="btn-secondary" onclick="toggleBulk()">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 탭 -->
+        <div class="tabs">
+            <div class="tab active" id="tab-all" onclick="setTab('all')">전체</div>
+            <div class="tab" id="tab-ready" onclick="setTab('ready')">입력 필요 <span id="readyBadge"></span></div>
+            <div class="tab" id="tab-waiting" onclick="setTab('waiting')">대기 중</div>
+            <div class="tab" id="tab-done" onclick="setTab('done')">완료</div>
+        </div>
+
+        <!-- 영상 리스트 -->
+        <div class="video-list" id="videoList"></div>
+
+        <!-- 리포트 -->
+        <div class="report-section" id="reportSection" style="display:none;">
+            <h2>
+                <span>7일 조회수 리포트</span>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-secondary btn-small" onclick="copyReport()">클립보드 복사</button>
+                    <button class="btn-success btn-small" onclick="downloadCSV()">CSV 다운로드</button>
+                </div>
+            </h2>
+            <table class="report-table" id="reportTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>영상 URL</th>
+                        <th>게시일</th>
+                        <th>7일 후 날짜</th>
+                        <th>조회수 (7일)</th>
+                        <th>메모</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ── 상태 ──────────────────────────────────────────────
+        let videos = JSON.parse(localStorage.getItem('tiktok_tracker_v1') || '[]');
+        let currentTab = 'all';
+
+        // ── 유틸 ──────────────────────────────────────────────
+        function save() {
+            localStorage.setItem('tiktok_tracker_v1', JSON.stringify(videos));
+        }
+
+        function toast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.style.background = type === 'error' ? '#ff4444' : '#1db954';
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        function today() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function addDays(dateStr, n) {
+            const d = new Date(dateStr);
+            d.setDate(d.getDate() + n);
+            return d.toISOString().slice(0, 10);
+        }
+
+        function daysElapsed(dateStr) {
+            const posted = new Date(dateStr);
+            const now = new Date();
+            posted.setHours(0, 0, 0, 0);
+            now.setHours(0, 0, 0, 0);
+            return Math.floor((now - posted) / (1000 * 60 * 60 * 24));
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function extractVideoId(url) {
+            const m = url.match(/\/video\/(\d+)/);
+            return m ? m[1] : null;
+        }
+
+        function normUrl(url) {
+            return url.trim().replace(/\?.*$/, '');
+        }
+
+        function parseDate(raw) {
+            if (!raw) return null;
+            raw = raw.trim();
+            // yyyy-mm-dd / yyyy.mm.dd / yyyy/mm/dd
+            const m = raw.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+            if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+            return null;
+        }
+
+        function videoStatus(v) {
+            if (v.views !== null && v.views !== undefined) return 'done';
+            const elapsed = daysElapsed(v.postedAt);
+            if (elapsed >= 7) return 'ready';
+            return 'waiting';
+        }
+
+        // ── 추가 ──────────────────────────────────────────────
+        function addVideo() {
+            const url = document.getElementById('urlInput').value.trim();
+            const date = document.getElementById('dateInput').value || today();
+            const note = document.getElementById('noteInput').value.trim();
+
+            if (!url) { toast('URL을 입력해주세요.', 'error'); return; }
+            if (!url.includes('tiktok.com')) { toast('TikTok URL을 입력해주세요.', 'error'); return; }
+
+            const norm = normUrl(url);
+            if (videos.find(v => normUrl(v.url) === norm)) {
+                toast('이미 추가된 영상입니다.', 'error'); return;
+            }
+
+            videos.unshift({ id: Date.now(), url: norm, postedAt: date, note, views: null, addedAt: today() });
+            save();
+            document.getElementById('urlInput').value = '';
+            document.getElementById('noteInput').value = '';
+            toast('영상이 추가되었습니다!');
+            render();
+        }
+
+        function addBulkVideos() {
+            const lines = document.getElementById('bulkTextarea').value
+                .split('\n').map(l => l.trim()).filter(Boolean);
+
+            let added = 0, skipped = 0;
+
+            lines.forEach(line => {
+                // URL + optional date separated by tab, comma, or space+date
+                const parts = line.split(/[\t,]\s*/);
+                let url = parts[0].trim();
+                let date = null;
+
+                if (parts[1]) date = parseDate(parts[1]);
+                if (!date) {
+                    // try to extract date-like token after space
+                    const spaceMatch = url.match(/^(https?:\/\/\S+)\s+(\S+)$/);
+                    if (spaceMatch) { url = spaceMatch[1]; date = parseDate(spaceMatch[2]); }
+                }
+                if (!date) date = today();
+
+                if (!url.includes('tiktok.com')) { skipped++; return; }
+                const norm = normUrl(url);
+                if (videos.find(v => normUrl(v.url) === norm)) { skipped++; return; }
+
+                videos.unshift({ id: Date.now() + Math.random(), url: norm, postedAt: date, note: '', views: null, addedAt: today() });
+                added++;
+            });
+
+            save();
+            document.getElementById('bulkTextarea').value = '';
+            toast(`${added}개 추가됨${skipped ? `, ${skipped}개 건너뜀` : ''}`);
+            toggleBulk();
+            render();
+        }
+
+        // ── 조회수 저장 ─────────────────────────────────────────
+        function saveViews(id) {
+            const input = document.getElementById(`views-${id}`);
+            const raw = input.value.replace(/,/g, '').trim();
+            const num = parseInt(raw, 10);
+            if (isNaN(num) || num < 0) { toast('올바른 조회수를 입력해주세요.', 'error'); return; }
+
+            const v = videos.find(v => v.id === id);
+            if (v) { v.views = num; v.recordedAt = today(); save(); toast('조회수가 저장되었습니다!'); render(); }
+        }
+
+        function deleteVideo(id) {
+            if (!confirm('이 영상을 삭제할까요?')) return;
+            videos = videos.filter(v => v.id !== id);
+            save();
+            toast('삭제되었습니다.');
+            render();
+        }
+
+        function editViews(id) {
+            const v = videos.find(v => v.id === id);
+            if (!v) return;
+            v.views = null;
+            v.recordedAt = null;
+            save();
+            render();
+        }
+
+        // ── 탭 ───────────────────────────────────────────────
+        function setTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            render();
+        }
+
+        function toggleBulk() {
+            const bulk = document.getElementById('bulkInput');
+            const single = document.getElementById('singleInput');
+            const span = document.getElementById('toggleBulk');
+            if (bulk.style.display === 'none') {
+                bulk.style.display = 'block';
+                single.style.display = 'none';
+                span.textContent = '✏️ 단일 입력으로 전환';
+            } else {
+                bulk.style.display = 'none';
+                single.style.display = 'block';
+                span.textContent = '📋 여러 링크 한번에 붙여넣기';
+            }
+        }
+
+        document.getElementById('toggleBulk').onclick = toggleBulk;
+
+        // Enter key on single input
+        document.getElementById('urlInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') addVideo();
+        });
+
+        // ── 렌더 ──────────────────────────────────────────────
+        function render() {
+            const counts = { total: videos.length, waiting: 0, ready: 0, done: 0 };
+            videos.forEach(v => counts[videoStatus(v)]++);
+
+            document.getElementById('statTotal').textContent = counts.total;
+            document.getElementById('statWaiting').textContent = counts.waiting;
+            document.getElementById('statReady').textContent = counts.ready;
+            document.getElementById('statDone').textContent = counts.done;
+
+            const badge = document.getElementById('readyBadge');
+            badge.textContent = counts.ready > 0 ? `(${counts.ready})` : '';
+
+            const filtered = videos.filter(v => {
+                if (currentTab === 'all') return true;
+                return videoStatus(v) === currentTab;
+            });
+
+            const list = document.getElementById('videoList');
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>${currentTab === 'all' ? '아직 추가된 영상이 없습니다.' : '해당 항목이 없습니다.'}</p>
+                    </div>`;
+            } else {
+                list.innerHTML = filtered.map(v => renderCard(v)).join('');
+            }
+
+            renderReport();
+        }
+
+        function renderCard(v) {
+            const status = videoStatus(v);
+            const elapsed = daysElapsed(v.postedAt);
+            const targetDate = addDays(v.postedAt, 7);
+            const daysLeft = 7 - elapsed;
+
+            let statusHtml = '';
+            let extraHtml = '';
+
+            if (status === 'done') {
+                statusHtml = `
+                    <div>
+                        <span class="badge badge-done">✓ 기록 완료</span>
+                        <div class="views-display">${Number(v.views).toLocaleString()} 뷰</div>
+                        <div class="days-left">${v.recordedAt ? `기록일: ${formatDate(v.recordedAt)}` : ''}</div>
+                    </div>`;
+                extraHtml = `
+                    <div class="card-actions">
+                        <button class="btn-secondary btn-small" onclick="editViews(${v.id})">수정</button>
+                        <button class="btn-danger" onclick="deleteVideo(${v.id})">삭제</button>
+                    </div>`;
+            } else if (status === 'ready') {
+                statusHtml = `<span class="badge badge-ready">🔴 조회수 입력 필요</span>`;
+                extraHtml = `
+                    <div class="views-input-row">
+                        <input type="number" id="views-${v.id}" placeholder="7일 조회수 입력" min="0"
+                            onkeypress="if(event.key==='Enter') saveViews(${v.id})" />
+                        <button class="btn-primary btn-small" onclick="saveViews(${v.id})">저장</button>
+                        <button class="btn-danger" onclick="deleteVideo(${v.id})">삭제</button>
+                    </div>`;
+            } else {
+                statusHtml = `
+                    <div>
+                        <span class="badge badge-waiting">⏳ 대기 중</span>
+                        <div class="days-left">D-${daysLeft} (${formatDate(targetDate)} 부터 입력 가능)</div>
+                    </div>`;
+                extraHtml = `
+                    <div class="card-actions">
+                        <button class="btn-danger" onclick="deleteVideo(${v.id})">삭제</button>
+                    </div>`;
+            }
+
+            return `
+                <div class="video-card ${status}">
+                    <div class="video-thumb">🎵</div>
+                    <div class="video-info">
+                        <div class="video-url">
+                            <a href="${v.url}" target="_blank" rel="noopener">${v.url}</a>
+                        </div>
+                        <div class="video-dates">
+                            게시일: ${formatDate(v.postedAt)} &nbsp;·&nbsp; 7일 후: ${formatDate(targetDate)}
+                            ${v.note ? `&nbsp;·&nbsp; 메모: ${v.note}` : ''}
+                        </div>
+                        ${extraHtml}
+                    </div>
+                    <div class="video-status">${statusHtml}</div>
+                </div>`;
+        }
+
+        // ── 리포트 ────────────────────────────────────────────
+        function renderReport() {
+            const doneVideos = videos.filter(v => videoStatus(v) === 'done');
+            const pendingVideos = videos.filter(v => videoStatus(v) !== 'done');
+            const section = document.getElementById('reportSection');
+
+            if (videos.length === 0) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+
+            const allForReport = [...doneVideos, ...pendingVideos];
+            const tbody = document.getElementById('reportBody');
+
+            tbody.innerHTML = allForReport.map((v, i) => {
+                const targetDate = addDays(v.postedAt, 7);
+                const viewsCell = v.views !== null && v.views !== undefined
+                    ? `<td class="views-cell">${Number(v.views).toLocaleString()}</td>`
+                    : `<td class="pending-cell">-</td>`;
+                return `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td><a href="${v.url}" target="_blank" rel="noopener">${v.url.replace('https://www.tiktok.com', '').replace('https://tiktok.com', '')}</a></td>
+                        <td>${formatDate(v.postedAt)}</td>
+                        <td>${formatDate(targetDate)}</td>
+                        ${viewsCell}
+                        <td>${v.note || '-'}</td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function copyReport() {
+            const doneVideos = videos.filter(v => v.views !== null && v.views !== undefined);
+            if (doneVideos.length === 0) { toast('기록된 조회수가 없습니다.', 'error'); return; }
+
+            const header = ['#', 'URL', '게시일', '7일 후', '조회수(7일)', '메모'].join('\t');
+            const rows = doneVideos.map((v, i) =>
+                [i+1, v.url, formatDate(v.postedAt), formatDate(addDays(v.postedAt, 7)), v.views, v.note || ''].join('\t')
+            );
+            navigator.clipboard.writeText([header, ...rows].join('\n'))
+                .then(() => toast('클립보드에 복사되었습니다!'))
+                .catch(() => toast('복사 실패. 직접 선택해주세요.', 'error'));
+        }
+
+        function downloadCSV() {
+            if (videos.length === 0) { toast('데이터가 없습니다.', 'error'); return; }
+
+            const header = ['순번', 'URL', '게시일', '7일 후 날짜', '조회수(7일)', '메모', '상태'];
+            const rows = videos.map((v, i) => {
+                const status = videoStatus(v);
+                const statusLabel = status === 'done' ? '완료' : status === 'ready' ? '입력필요' : '대기중';
+                return [
+                    i + 1,
+                    `"${v.url}"`,
+                    formatDate(v.postedAt),
+                    formatDate(addDays(v.postedAt, 7)),
+                    v.views !== null && v.views !== undefined ? v.views : '',
+                    `"${v.note || ''}"`,
+                    statusLabel
+                ];
+            });
+
+            const csvContent = '\uFEFF' + [header, ...rows].map(r => r.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `tiktok_views_report_${today()}.csv`;
+            link.click();
+            toast('CSV 다운로드 시작!');
+        }
+
+        // ── 초기 렌더 ─────────────────────────────────────────
+        render();
+    </script>
+</body>
+
+</html>
