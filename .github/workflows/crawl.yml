@@ -1,0 +1,28 @@
+name: Run Crawler
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 UTC 00:00 (한국시간 09:00)
+  workflow_dispatch:      # 수동 실행 가능
+
+jobs:
+  crawl:
+    runs-on: self-hosted  # 방법 2: 국내 서버의 self-hosted runner 사용
+    # runs-on: ubuntu-latest  # 공용 runner로 되돌리려면 이 줄로 교체
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run crawler
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python crawl.py
