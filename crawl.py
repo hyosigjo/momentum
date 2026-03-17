@@ -4,10 +4,7 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-TARGET_URL = (
-    "https://www.i-boss.co.kr/insiter.php"
-    "?design_file=1957.php&search_value=%EC%9D%B8%ED%94%8C%EB%A3%A8%EC%96%B8%EC%84%9C"
-)
+TARGET_URL = "https://www.i-boss.co.kr/ab-1957"
 
 HEADERS = {
     "User-Agent": (
